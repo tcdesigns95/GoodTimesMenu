@@ -14,75 +14,71 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --coral:     #E8673A;
-  --charcoal:  #1E1C1A;
-  --cream:     #FAF7F2;
-  --linen:     #F0EBE3;
-  --muted:     #8A8580;
-  --border:    rgba(30,28,26,0.10);
-  --dash:      rgba(30,28,26,0.18);
+  --coral:    #E8673A;
+  --charcoal: #1E1C1A;
+  --cream:    #FAF7F2;
+  --linen:    #F0EBE3;
+  --muted:    #8A8580;
+  --border:   rgba(30,28,26,0.10);
+  --dash:     rgba(30,28,26,0.18);
   --vi-bg: #EDE9F7; --vi-tx: #4A2E96;
   --go-bg: #FFF3D0; --go-tx: #7A5010;
   --sa-bg: #E4F2E4; --sa-tx: #2E6B2E;
   --cb-bg: #D4ECD4; --cb-tx: #1A6B2E;
 }
 
-html { -webkit-text-size-adjust: 100%; }
-
-body {
+html, body {
+  height: 100%;
+  overflow: hidden; /* outer body never scrolls — pages do */
   font-family: 'DM Sans', sans-serif;
   background: var(--cream);
   color: var(--charcoal);
-  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  padding-bottom: 56px; /* room for ticker */
 }
 
-/* ── STICKY HEADER ── */
+/* ══════════════════════════════════════
+   STICKY HEADER
+══════════════════════════════════════ */
 #gt-header {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 0; left: 0; right: 0;
   z-index: 50;
   background: var(--cream);
   border-bottom: 2px solid var(--charcoal);
-  transition: padding .3s, box-shadow .3s, background .3s;
+  transition: box-shadow .3s, background .3s;
 }
 #gt-header.scrolled {
-  background: rgba(250,247,242,0.93);
+  background: rgba(250,247,242,0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 }
 .header-inner {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 18px 28px;
+  padding: 16px 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  transition: padding .3s;
+  gap: 16px;
 }
-#gt-header.scrolled .header-inner { padding: 10px 28px; }
+.header-left { display: flex; flex-direction: column; gap: 1px; }
 
 .gt-logo {
   font-family: 'Righteous', cursive;
-  font-size: 36px;
+  font-size: 34px;
   line-height: 1;
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
   user-select: none;
 }
-#gt-header.scrolled .gt-logo { font-size: 26px; }
 .gt-logo .g, .gt-logo .t {
   cursor: pointer;
-  padding: 6px 4px 3px;
+  padding: 4px 3px 2px;
   border-bottom: 3px solid transparent;
-  transition: font-size .3s, opacity .15s;
+  transition: opacity .15s;
 }
 .gt-logo .g { color: var(--coral); }
 .gt-logo .g.active { border-bottom-color: var(--coral); }
@@ -91,133 +87,243 @@ body {
 .gt-logo .g:active, .gt-logo .t:active { opacity: .6; }
 
 .brand-sub {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: .2em;
   color: var(--muted);
-  margin-top: 3px;
   font-weight: 700;
-  transition: opacity .2s;
+  margin-top: 2px;
 }
-#gt-header.scrolled .brand-sub { opacity: 0; height: 0; overflow: hidden; margin: 0; }
+
+.header-right { display: flex; align-items: center; gap: 16px; }
 
 .menu-badge {
   background: var(--charcoal);
   color: var(--cream);
-  padding: 10px 20px;
+  padding: 9px 18px;
   border-radius: 50px;
   font-family: 'Righteous', cursive;
-  font-size: 16px;
-  transition: font-size .3s, padding .3s;
+  font-size: 15px;
   white-space: nowrap;
 }
-#gt-header.scrolled .menu-badge { font-size: 13px; padding: 7px 14px; }
 
-/* ── MAIN CONTENT ── */
-#gt-app {
-  max-width: 1200px;
+/* Page indicator dots in header */
+.page-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.page-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--dash);
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+  border: none;
+  padding: 0;
+}
+.page-dot.active {
+  background: var(--coral);
+  transform: scale(1.3);
+}
+
+/* ══════════════════════════════════════
+   SWIPE CONTAINER
+══════════════════════════════════════ */
+#gt-pages-wrap {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 52px; /* leave room for ticker */
+  overflow: hidden;
+}
+
+#gt-pages {
+  display: flex;
+  height: 100%;
+  transition: transform .38s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+
+.gt-page {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.page-inner {
+  max-width: 900px;
   margin: 0 auto;
   padding: 28px 28px 32px;
 }
 
-/* ── EDIT BAR ── */
-.edit-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
-.edit-bar .status {
-  font-size: 13px;
-  color: var(--muted);
-  margin-left: auto;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 11px 18px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  font-family: 'DM Sans', sans-serif;
-  min-height: 44px;
-  white-space: nowrap;
-}
-.btn-coral { background: var(--coral); color: white; }
-.btn-dark  { background: var(--charcoal); color: var(--cream); }
-.btn-ghost { background: transparent; border: 1.5px solid var(--dash); color: var(--charcoal); }
-.btn:active { opacity: .8; transform: scale(.98); }
+/* push content below fixed header */
+.page-inner { padding-top: 96px; }
 
-/* ── SECTIONS GRID ── */
-.sections-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 36px 40px;
-}
-
-.section-col h2 {
+/* ══════════════════════════════════════
+   SECTION HEADING
+══════════════════════════════════════ */
+.sec-heading {
   font-family: 'Righteous', cursive;
-  font-size: 20px;
+  font-size: 26px;
   color: var(--charcoal);
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 24px;
 }
-.section-col h2::after {
+.sec-heading::after {
   content: '';
   flex: 1;
-  height: 1.5px;
-  background: var(--border);
+  height: 2px;
+  background: var(--charcoal);
+}
+.sec-count {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: .05em;
+  text-transform: uppercase;
 }
 
-/* ── MENU ITEM ── */
+/* ══════════════════════════════════════
+   TOP PICKS — HERO PAGE
+══════════════════════════════════════ */
+.hero-intro {
+  margin-bottom: 28px;
+}
+.hero-intro h2 {
+  font-family: 'Righteous', cursive;
+  font-size: 32px;
+  color: var(--charcoal);
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+.hero-intro h2 span { color: var(--coral); }
+.hero-intro p {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.swipe-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 28px;
+  padding: 10px 14px;
+  background: var(--linen);
+  border-radius: 10px;
+  width: fit-content;
+}
+.swipe-hint .arrow { font-size: 18px; animation: nudge 2s ease-in-out infinite; }
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  50%       { transform: translateX(5px); }
+}
+
+.top-pick-item {
+  padding: 20px 0;
+  border-bottom: 1px dashed var(--dash);
+  position: relative;
+}
+.top-pick-item:first-of-type { border-top: 1px dashed var(--dash); }
+
+.tp-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--coral);
+  margin-bottom: 8px;
+}
+.tp-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.tp-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tp-name { font-size: 20px; font-weight: 700; }
+.tp-price { font-family: 'Righteous', cursive; font-size: 16px; white-space: nowrap; }
+.tp-meta { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.tp-desc { font-size: 14px; color: #5A5754; line-height: 1.65; }
+
+/* ══════════════════════════════════════
+   REGULAR MENU ITEMS
+══════════════════════════════════════ */
 .menu-item {
-  margin-bottom: 20px;
-  padding-bottom: 18px;
+  padding: 18px 0;
   border-bottom: 1px dashed var(--dash);
 }
-.menu-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.menu-item:last-child { border-bottom: none; }
 
 .item-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
-.item-left {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-}
+.item-left { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .item-name  { font-size: 17px; font-weight: 700; }
 .item-price { font-family: 'Righteous', cursive; font-size: 15px; white-space: nowrap; }
-.item-meta  { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.item-meta  { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; }
 .item-desc  { font-size: 14px; color: #5A5754; line-height: 1.6; }
-.thc        { color: var(--coral); font-weight: 700; }
-.cbd-val    { color: var(--cb-tx); font-weight: 700; }
+.thc     { color: var(--coral); font-weight: 700; }
+.cbd-val { color: var(--cb-tx); font-weight: 700; }
 
 .badge { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; letter-spacing: .03em; }
-.indica       { background: var(--vi-bg); color: var(--vi-tx); }
-.sativa       { background: var(--go-bg); color: var(--go-tx); }
-.hybrid       { background: var(--sa-bg); color: var(--sa-tx); }
-.indica-hybrid{ background: var(--vi-bg); color: var(--vi-tx); }
-.sativa-hybrid{ background: var(--sa-bg); color: var(--sa-tx); }
-.cbd-badge    { background: var(--cb-bg); color: var(--cb-tx); }
+.indica        { background: var(--vi-bg); color: var(--vi-tx); }
+.sativa        { background: var(--go-bg); color: var(--go-tx); }
+.hybrid        { background: var(--sa-bg); color: var(--sa-tx); }
+.indica-hybrid { background: var(--vi-bg); color: var(--vi-tx); }
+.sativa-hybrid { background: var(--sa-bg); color: var(--sa-tx); }
+.cbd-badge     { background: var(--cb-bg); color: var(--cb-tx); }
+
+/* ══════════════════════════════════════
+   EDIT MODE
+══════════════════════════════════════ */
+.edit-bar {
+  position: fixed;
+  top: 76px; left: 0; right: 0;
+  z-index: 40;
+  background: var(--linen);
+  border-bottom: 1px solid var(--dash);
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.edit-bar ~ #gt-pages-wrap .page-inner { padding-top: 148px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px; border-radius: 10px;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer; border: none;
+  font-family: 'DM Sans', sans-serif;
+  min-height: 40px; white-space: nowrap;
+}
+.btn-coral { background: var(--coral); color: white; }
+.btn-dark  { background: var(--charcoal); color: var(--cream); }
+.btn-ghost { background: transparent; border: 1.5px solid var(--dash); color: var(--charcoal); }
+.btn:active { opacity: .8; transform: scale(.98); }
+.status { font-size: 12px; color: var(--muted); margin-left: auto; }
 
 .edit-actions { display: flex; gap: 4px; }
 .icon-btn {
   background: none; border: none; cursor: pointer;
-  padding: 6px 8px; border-radius: 8px;
-  color: var(--muted); font-size: 20px;
+  padding: 5px 7px; border-radius: 8px;
+  color: var(--muted); font-size: 18px;
   display: inline-flex; align-items: center;
-  min-width: 40px; min-height: 40px; justify-content: center;
+  min-width: 36px; min-height: 36px; justify-content: center;
 }
 .icon-btn:active { background: var(--linen); }
 .icon-btn.red:active { color: #C0392B; }
@@ -226,33 +332,57 @@ body {
   background: none; border: 1.5px dashed var(--dash);
   width: 100%; padding: 12px; border-radius: 10px;
   font-size: 14px; color: var(--muted); cursor: pointer;
-  font-family: 'DM Sans', sans-serif; margin-top: 10px;
+  font-family: 'DM Sans', sans-serif; margin-top: 12px;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   min-height: 44px;
 }
 .inline-add-btn:active { border-color: var(--coral); color: var(--coral); }
 
 .sec-name-input {
-  font-family: 'Righteous', cursive; font-size: 20px;
+  font-family: 'Righteous', cursive; font-size: 22px;
   background: none; border: none; border-bottom: 2px dashed var(--dash);
-  color: var(--charcoal); outline: none; width: 180px; min-height: 44px;
+  color: var(--charcoal); outline: none; min-height: 44px;
 }
 
-/* ── FOOTER ── */
-.menu-footer {
+/* ══════════════════════════════════════
+   PAGE NAV ARROWS
+══════════════════════════════════════ */
+.page-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  background: white;
+  border: 1px solid var(--dash);
+  border-radius: 50%;
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: opacity .2s;
+  color: var(--charcoal);
+}
+.page-arrow:active { background: var(--linen); }
+.page-arrow.prev { left: 12px; }
+.page-arrow.next { right: 12px; }
+.page-arrow.hidden { opacity: 0; pointer-events: none; }
+
+/* ══════════════════════════════════════
+   FOOTER (per page)
+══════════════════════════════════════ */
+.page-footer {
   margin-top: 32px; padding-top: 16px;
   border-top: 1px solid var(--border);
-  display: flex; justify-content: space-between;
-  flex-wrap: wrap; gap: 8px;
   font-size: 12px; color: var(--muted);
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
 }
-.menu-footer em { font-style: italic; }
+.page-footer em { font-style: italic; }
 
-/* ── STATE MESSAGES ── */
-.state-msg {
-  text-align: center; padding: 60px 20px;
-  color: var(--muted); font-size: 16px;
-}
+/* ══════════════════════════════════════
+   STATE MESSAGES
+══════════════════════════════════════ */
+.state-msg { text-align: center; padding: 80px 20px; color: var(--muted); font-size: 16px; }
 .spinner {
   width: 32px; height: 32px;
   border: 3px solid var(--border); border-top-color: var(--coral);
@@ -261,15 +391,16 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── CONNECT BANNER ── */
+/* ══════════════════════════════════════
+   CONNECT BANNER
+══════════════════════════════════════ */
 .connect-banner {
   background: white; border: 1.5px dashed var(--dash);
-  border-radius: 14px; padding: 32px 28px;
-  text-align: center; margin-bottom: 28px;
+  border-radius: 14px; padding: 32px 28px; text-align: center;
 }
 .connect-banner h3 { font-family: 'Righteous', cursive; font-size: 22px; margin-bottom: 10px; }
 .connect-banner p  { font-size: 15px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; max-width: 480px; margin-left: auto; margin-right: auto; }
-.url-row { display: flex; gap: 10px; max-width: 580px; margin: 0 auto; }
+.url-row { display: flex; gap: 10px; max-width: 560px; margin: 0 auto; }
 .url-row input {
   flex: 1; padding: 12px 14px;
   border: 1.5px solid var(--dash); border-radius: 10px;
@@ -277,22 +408,24 @@ body {
   background: var(--cream); color: var(--charcoal); outline: none; min-height: 44px;
 }
 .url-row input:focus { border-color: var(--coral); }
-.steps { text-align: left; max-width: 480px; margin: 22px auto 0; display: grid; gap: 12px; }
-.step { display: flex; gap: 14px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
+.steps { text-align: left; max-width: 480px; margin: 20px auto 0; display: grid; gap: 12px; }
+.step { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
 .step-num {
   background: var(--coral); color: white; border-radius: 50%;
-  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+  width: 24px; height: 24px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; margin-top: 1px;
 }
-.step code { background: var(--linen); padding: 2px 7px; border-radius: 4px; font-size: 13px; }
+.step code { background: var(--linen); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 
-/* ── MODAL ── */
+/* ══════════════════════════════════════
+   MODAL
+══════════════════════════════════════ */
 .modal-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   padding: 24px; z-index: 200;
-  -webkit-overflow-scrolling: touch;
 }
 .modal {
   background: white; border-radius: 16px; padding: 28px;
@@ -321,43 +454,41 @@ body {
   margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
 }
 
-/* ── TICKER BANNER ── */
+/* ══════════════════════════════════════
+   TICKER BANNER
+══════════════════════════════════════ */
 #gt-ticker {
   position: fixed; bottom: 0; left: 0; right: 0;
   z-index: 100; height: 52px;
   background: var(--coral);
-  border-top: 3px solid rgba(0,0,0,0.15);
-  box-shadow: 0 -4px 24px rgba(232,103,58,0.3);
+  border-top: 3px solid rgba(0,0,0,0.12);
+  box-shadow: 0 -4px 24px rgba(232,103,58,0.28);
   display: flex; align-items: center; overflow: hidden;
 }
 #gt-ticker::before, #gt-ticker::after {
   content: ''; position: absolute; top: 0; bottom: 0; width: 60px; z-index: 2; pointer-events: none;
 }
 #gt-ticker::before { left: 0; background: linear-gradient(to right, var(--coral), transparent); }
-#gt-ticker::after  { right: 0; background: linear-gradient(to left,  var(--coral), transparent); }
-
+#gt-ticker::after  { right: 0; background: linear-gradient(to left, var(--coral), transparent); }
 .ticker-label {
   flex-shrink: 0; z-index: 3;
-  background: rgba(0,0,0,0.2);
-  color: white;
-  font-family: 'Righteous', cursive;
-  font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+  background: rgba(0,0,0,0.18); color: white;
+  font-family: 'Righteous', cursive; font-size: 13px;
+  letter-spacing: .12em; text-transform: uppercase;
   padding: 0 16px; height: 100%;
   display: flex; align-items: center; white-space: nowrap;
-  border-right: 1px solid rgba(255,255,255,0.2);
+  border-right: 1px solid rgba(255,255,255,0.18);
 }
 .ticker-scroll-wrap { flex: 1; overflow: hidden; display: flex; align-items: center; }
 .ticker-track {
   display: flex; align-items: center; white-space: nowrap;
-  animation: ticker 55s linear infinite;
-  will-change: transform;
+  animation: ticker 55s linear infinite; will-change: transform;
 }
 .ticker-track:hover { animation-play-state: paused; }
 @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-.ticker-item { color: white; font-size: 15px; font-weight: 600; padding: 0 40px; display: inline-flex; align-items: center; gap: 8px; }
-.ticker-sep  { width: 5px; height: 5px; background: rgba(255,255,255,0.45); border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.ticker-item { color: white; font-size: 15px; font-weight: 600; padding: 0 40px; }
+.ticker-sep  { width: 5px; height: 5px; background: rgba(255,255,255,0.4); border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
-/* Edit ticker button */
 .ticker-edit-btn {
   position: fixed; bottom: 60px; right: 16px; z-index: 150;
   background: var(--charcoal); color: white;
@@ -369,7 +500,7 @@ body {
 }
 .ticker-edit-btn:active { transform: scale(.97); }
 
-/* Banner modal */
+/* Banner editor modal */
 .banner-modal {
   background: white; border-radius: 16px; padding: 24px;
   width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto;
@@ -397,41 +528,51 @@ body {
 .add-msg-btn:active { border-color: var(--coral); color: var(--coral); }
 .banner-hint { font-size: 12px; color: var(--muted); margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); line-height: 1.6; }
 
-/* ── RESPONSIVE ── */
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
 @media (max-width: 600px) {
-  #gt-app { padding: 16px 16px 24px; }
-  .header-inner { padding: 14px 16px; }
-  #gt-header.scrolled .header-inner { padding: 8px 16px; }
-  .gt-logo { font-size: 28px; }
-  .menu-badge { font-size: 13px; padding: 8px 14px; }
-  .sections-grid { grid-template-columns: 1fr; gap: 28px; }
-  .row2 { grid-template-columns: 1fr; }
+  .header-inner { padding: 12px 16px; }
+  .gt-logo { font-size: 26px; }
+  .menu-badge { display: none; }
+  .page-inner { padding: 88px 16px 28px; }
+  .page-arrow { display: none; }
 }
-@media (min-width: 900px)  { .sections-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1200px) { .sections-grid { grid-template-columns: repeat(3, 1fr); } }
 @media print {
   #gt-header { position: static; }
-  .edit-bar, .edit-actions, .inline-add-btn, .ticker-edit-btn, #gt-ticker { display: none !important; }
+  .edit-bar, .ticker-edit-btn, #gt-ticker, .page-arrow { display: none !important; }
 }
 </style>
 </head>
 <body>
 
-<!-- STICKY HEADER -->
+<!-- FIXED HEADER -->
 <div id="gt-header">
   <div class="header-inner">
-    <div>
+    <div class="header-left">
       <div class="gt-logo">
         <span class="g" id="logo-g">Good</span>&nbsp;<span class="t" id="logo-t">Times</span>
       </div>
       <div class="brand-sub">Cannabis Company</div>
     </div>
-    <div class="menu-badge">Fresh In-Store Menu</div>
+    <div class="header-right">
+      <div class="page-dots" id="page-dots"></div>
+      <div class="menu-badge">Fresh In-Store Menu</div>
+    </div>
   </div>
 </div>
 
-<!-- MAIN CONTENT -->
-<div id="gt-app"></div>
+<!-- EDIT BAR (injected when in edit mode) -->
+<div id="edit-bar-slot"></div>
+
+<!-- SWIPE PAGES -->
+<div id="gt-pages-wrap">
+  <div id="gt-pages"></div>
+</div>
+
+<!-- PAGE ARROWS -->
+<button class="page-arrow prev hidden" id="arrow-prev">&#8592;</button>
+<button class="page-arrow next hidden" id="arrow-next">&#8594;</button>
 
 <!-- TICKER -->
 <div id="gt-ticker">
@@ -442,9 +583,9 @@ body {
 </div>
 
 <script>
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 //  STATE
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 let mode      = 'view';
 let modal     = null;
 let sheetUrl  = localStorage.getItem('gt_sheet_url') || '';
@@ -453,6 +594,7 @@ let loading   = false;
 let loadError = '';
 let activeSec = null;
 let nextId    = Date.now();
+let curPage   = 0;
 
 let banners = JSON.parse(localStorage.getItem('gt_banners') || 'null') || [
   { text: '🔥 House Prerolls — 2 for $10 · Ask your budtender!', on: true },
@@ -461,20 +603,18 @@ let banners = JSON.parse(localStorage.getItem('gt_banners') || 'null') || [
   { text: '🐘 Good Times Cannabis · Sellwood & Union · Portland\'s finest', on: true },
 ];
 
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 //  PERSIST
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 function save() {
   localStorage.setItem('gt_sections', JSON.stringify(sections));
   if (sheetUrl) localStorage.setItem('gt_sheet_url', sheetUrl);
 }
-function saveBanners() {
-  localStorage.setItem('gt_banners', JSON.stringify(banners));
-}
+function saveBanners() { localStorage.setItem('gt_banners', JSON.stringify(banners)); }
 
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 //  SHEET FETCH
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 function buildCsvUrl(url) {
   const u = url.trim();
   if (u.includes('output=csv')) return u;
@@ -500,11 +640,11 @@ async function fetchSheet(url) {
       const text = await res.text();
       if (!text || text.trim().length < 5) { lastErr = 'Empty response'; continue; }
       parseCSV(text);
-      sheetUrl = url.trim();
-      save(); loadError = ''; loading = false; render(); return;
+      sheetUrl = url.trim(); save();
+      loadError = ''; loading = false; render(); return;
     } catch(e) { lastErr = e.message || 'Fetch failed'; }
   }
-  loadError = `Failed to load — ${lastErr}. Make sure the sheet is published: File → Share → Publish to web → CSV.`;
+  loadError = `Failed — ${lastErr}. Make sure sheet is published: File → Share → Publish to web → CSV.`;
   loading = false; render();
 }
 
@@ -512,15 +652,18 @@ function parseCSV(text) {
   const rows = text.trim().split('\n').map(parseRow);
   if (rows.length < 2) return;
   const map = {};
+  const order = [];
   for (let i = 1; i < rows.length; i++) {
     const [section, name, type, thc, cbd, grower, price, size, desc] = rows[i];
-    if (!section || !name || section.trim() === '') continue;
+    if (!section || !name || !section.trim() || !name.trim()) continue;
     const key = section.trim();
-    if (!map[key]) map[key] = { id: nextId++, name: key, items: [] };
+    if (!map[key]) { map[key] = { id: nextId++, name: key, items: [] }; order.push(key); }
+    // Normalize type: trim, lowercase, replace spaces/dashes sequences with single dash
+    const typeNorm = (type||'hybrid').trim().toLowerCase().replace(/[\s\-]+/g, '-').replace(/^-|-$/g, '');
     map[key].items.push({
       id: nextId++,
       name:   name.trim(),
-      type:   (type||'hybrid').trim().toLowerCase().replace(/\s+/g,'-'),
+      type:   typeNorm,
       thc:    (thc||'').trim(),
       cbd:    (cbd||'').trim(),
       grower: (grower||'').trim(),
@@ -529,7 +672,7 @@ function parseCSV(text) {
       desc:   (desc||'').trim()
     });
   }
-  sections = Object.values(map);
+  sections = order.map(k => map[k]);
 }
 
 function parseRow(row) {
@@ -544,216 +687,180 @@ function parseRow(row) {
   return out;
 }
 
-// ─────────────────────────────────────────────
-//  HELPERS
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
 function esc(s) {
-  return String(s||'')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function q(id) { return document.getElementById(id); }
 function val(id) { return (q(id)?.value||'').trim(); }
-
 function setMode(m) { mode = m; render(); }
 
-// ─────────────────────────────────────────────
-//  TICKER
-// ─────────────────────────────────────────────
-function renderTicker() {
-  const track = q('ticker-track');
-  if (!track) return;
-  const active = banners.filter(b => b.on && b.text.trim());
-  const msgs = active.length ? active : [{ text: 'Good Times Cannabis · Portland, OR' }];
-  const items = [...msgs, ...msgs].map(b =>
-    `<span class="ticker-item">${b.text}</span><span class="ticker-sep"></span>`
-  ).join('');
-  track.innerHTML = items;
-  const dur = Math.max(40, msgs.reduce((s,b) => s + b.text.length, 0) * 0.6);
-  track.style.animationDuration = dur + 's';
-}
-
-function openBannerEditor() {
-  const existing = q('banner-overlay');
-  if (existing) existing.remove();
-
-  const rows = banners.map((b, i) => `
-    <div class="banner-row">
-      <input type="checkbox" ${b.on ? 'checked' : ''} data-i="${i}" class="bc">
-      <input type="text" value="${esc(b.text)}" data-i="${i}" class="bt" placeholder="Type a promo message…">
-      <button class="b-del" data-i="${i}">✕</button>
-    </div>`).join('');
-
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'banner-overlay';
-  overlay.innerHTML = `<div class="banner-modal">
-    <h3>🔥 Ticker Messages</h3>
-    <p class="sub">Check to show, uncheck to hide. Changes save instantly.</p>
-    <div id="brows">${rows}</div>
-    <button class="add-msg-btn" id="b-add">+ Add message</button>
-    <p class="banner-hint">💡 Use emoji at the start to make messages pop — e.g. 🔥 Deal of the day: 2 prerolls for $10!</p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="b-done">Done</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-
-  overlay.querySelectorAll('.bc').forEach(el => {
-    el.addEventListener('change', () => { banners[+el.dataset.i].on = el.checked; saveBanners(); renderTicker(); });
-  });
-  overlay.querySelectorAll('.bt').forEach(el => {
-    el.addEventListener('input', () => { banners[+el.dataset.i].text = el.value; saveBanners(); renderTicker(); });
-  });
-  overlay.querySelectorAll('.b-del').forEach(el => {
-    el.addEventListener('click', () => { banners.splice(+el.dataset.i, 1); saveBanners(); renderTicker(); openBannerEditor(); });
-  });
-  q('b-add').addEventListener('click', () => {
-    banners.push({ text: '', on: true }); saveBanners(); openBannerEditor();
-  });
-  q('b-done').addEventListener('click', () => overlay.remove());
-}
-
-// ─────────────────────────────────────────────
-//  ITEM MODAL
-// ─────────────────────────────────────────────
-function openItemModal(type, secId, itemId) {
-  if (type === 'edit') {
-    const sec  = sections.find(s => s.id === secId);
-    const item = sec?.items.find(i => i.id === itemId);
-    if (!item) return;
-    activeSec = secId;
-    modal = { type: 'edit', secId, itemId, data: { ...item } };
-  } else {
-    modal = { type: 'add', data: { name:'', type:'hybrid', thc:'', cbd:'', grower:'', price:'', size:'', desc:'' } };
-  }
-  render();
-}
-
-function saveItem() {
-  const d = {
-    name:   val('m-name'),
-    type:   val('m-type'),
-    thc:    val('m-thc'),
-    cbd:    val('m-cbd'),
-    grower: val('m-grower'),
-    price:  val('m-price'),
-    size:   val('m-size'),
-    desc:   val('m-desc')
+function typeBadge(type) {
+  // Map display label
+  const labels = {
+    'indica': 'Indica', 'sativa': 'Sativa', 'hybrid': 'Hybrid',
+    'indica-hybrid': 'Indica Hybrid', 'sativa-hybrid': 'Sativa Hybrid'
   };
-  if (!d.name) return;
-  const sec = sections.find(s => s.id === +val('m-sec'));
-  if (!sec) return;
-  if (modal.type === 'add') {
-    sec.items.push({ id: nextId++, ...d });
-  } else {
-    const idx = sec.items.findIndex(i => i.id === modal.itemId);
-    if (idx > -1) sec.items[idx] = { id: modal.itemId, ...d };
-    else sec.items.push({ id: nextId++, ...d });
+  const label = labels[type] || type;
+  // CSS class — only use known classes, fallback to hybrid
+  const known = ['indica','sativa','hybrid','indica-hybrid','sativa-hybrid'];
+  const cls = known.includes(type) ? type : 'hybrid';
+  return `<span class="badge ${cls}">${esc(label)}</span>`;
+}
+
+function itemMeta(item) {
+  return [
+    `THC: <span class="thc">${esc(item.thc)}%</span>`,
+    item.cbd    ? `CBD: <span class="cbd-val">${esc(item.cbd)}%</span>` : '',
+    item.grower ? esc(item.grower) : '',
+    item.size   ? esc(item.size)   : ''
+  ].filter(Boolean).join(' · ');
+}
+
+// ══════════════════════════════════════
+//  SWIPE / PAGE NAV
+// ══════════════════════════════════════
+function totalPages() {
+  if (loading || loadError || sections.length === 0) return 1;
+  return sections.length;
+}
+
+function goToPage(n, animate = true) {
+  const total = totalPages();
+  curPage = Math.max(0, Math.min(n, total - 1));
+  const wrap = q('gt-pages');
+  if (wrap) {
+    if (!animate) wrap.style.transition = 'none';
+    wrap.style.transform = `translateX(-${curPage * 100}%)`;
+    if (!animate) setTimeout(() => wrap.style.transition = '', 10);
   }
-  modal = null; save(); render();
+  updateNav();
 }
 
-function addSection() {
-  sections.push({ id: nextId++, name: 'New Section', items: [] });
-  save(); render();
+function updateNav() {
+  const total = totalPages();
+  // Dots
+  const dotsEl = q('page-dots');
+  if (dotsEl) {
+    dotsEl.innerHTML = sections.map((s, i) =>
+      `<button class="page-dot${i===curPage?' active':''}" data-page="${i}" title="${esc(s.name)}"></button>`
+    ).join('');
+    dotsEl.querySelectorAll('.page-dot').forEach(btn => {
+      btn.addEventListener('click', () => goToPage(+btn.dataset.page));
+    });
+  }
+  // Arrows
+  const prev = q('arrow-prev'), next = q('arrow-next');
+  if (prev) prev.classList.toggle('hidden', curPage === 0);
+  if (next) next.classList.toggle('hidden', curPage >= total - 1);
 }
 
-// ─────────────────────────────────────────────
-//  BUILD HTML
-// ─────────────────────────────────────────────
-function buildContent() {
+// ══════════════════════════════════════
+//  BUILD PAGES HTML
+// ══════════════════════════════════════
+function buildPages() {
   const isEdit = mode === 'edit';
 
-  // Edit bar
-  let editBar = '';
-  if (isEdit) {
-    const connected = sheetUrl ? '● Sheet connected' : '○ No sheet connected';
-    editBar = `<div class="edit-bar">
-      <button class="btn btn-coral" id="b-add-item">+ Add item</button>
-      <button class="btn btn-dark"  id="b-add-sec">+ Add section</button>
-      <button class="btn btn-ghost" id="b-sheet">${sheetUrl ? '⬡ Re-sync sheet' : '⬡ Connect sheet'}</button>
-      ${sheetUrl ? `<button class="btn btn-ghost" id="b-reload">↻ Reload from sheet</button>` : ''}
-      <span class="status">${connected}</span>
-    </div>`;
-  }
-
-  // Sections
-  let body = '';
   if (loading) {
-    body = `<div class="state-msg"><div class="spinner"></div>Loading from Google Sheet…</div>`;
-  } else if (loadError) {
-    body = `<div class="state-msg"><strong style="color:#C0392B">⚠ Could not load sheet</strong><br><br>
-      <span style="font-size:14px">${esc(loadError)}</span><br><br>
-      <button class="btn btn-ghost" id="b-sheet-err">Update URL</button></div>`;
-  } else if (sections.length === 0 && isEdit) {
-    body = `<div class="connect-banner">
+    return `<div class="gt-page"><div class="page-inner"><div class="state-msg"><div class="spinner"></div>Loading from Google Sheet…</div></div></div>`;
+  }
+  if (loadError) {
+    return `<div class="gt-page"><div class="page-inner"><div class="state-msg">
+      <strong style="color:#C0392B;font-size:18px;">⚠ Could not load sheet</strong><br><br>
+      <span style="font-size:14px;color:var(--muted);">${esc(loadError)}</span><br><br>
+      <button class="btn btn-ghost" id="b-sheet-err">Update URL</button>
+    </div></div></div>`;
+  }
+  if (sections.length === 0) {
+    return `<div class="gt-page"><div class="page-inner"><div class="connect-banner">
       <h3>Connect your Google Sheet</h3>
-      <p>Paste your published CSV URL below. Updates to the sheet sync instantly when you reload.</p>
+      <p>Paste your published CSV URL to load the menu.</p>
       <div class="url-row">
         <input type="url" id="url-input" placeholder="https://docs.google.com/spreadsheets/d/..." value="${esc(sheetUrl)}">
         <button class="btn btn-coral" id="b-load">Load</button>
       </div>
       <div class="steps">
-        <div class="step"><div class="step-num">1</div><div><strong>File → Share → Publish to web</strong><br>Select <code>Comma-separated values (.csv)</code> → Publish</div></div>
-        <div class="step"><div class="step-num">2</div><div>Paste the URL here — we handle the rest.</div></div>
+        <div class="step"><div class="step-num">1</div><div><strong>File → Share → Publish to web</strong> → select <code>CSV</code> → Publish</div></div>
+        <div class="step"><div class="step-num">2</div><div>Paste the URL above and tap Load</div></div>
         <div class="step"><div class="step-num">3</div><div>Columns: <code>Section · Name · Type · THC · CBD · Grower · Price · Size · Description</code></div></div>
       </div>
-    </div>`;
-  } else if (sections.length === 0) {
-    body = `<div class="state-msg">🌿 No items yet. Tap <strong>Times</strong> to enter edit mode.</div>`;
-  } else {
-    const cols = sections.map(sec => {
-      const head = isEdit
-        ? `<h2><input class="sec-name-input" value="${esc(sec.name)}" data-action="rename" data-sec="${sec.id}">
-           <button class="icon-btn red" data-action="delsec" data-sec="${sec.id}">✕</button></h2>`
-        : `<h2>${esc(sec.name)}</h2>`;
-
-      const items = sec.items.map(item => {
-        const typeClass = item.type.replace(/\s+/g,'-');
-        const cbdBadge  = item.cbd ? `<span class="badge cbd-badge">CBD</span>` : '';
-        const editBtns  = isEdit ? `<div class="edit-actions">
-          <button class="icon-btn" data-action="edit" data-sec="${sec.id}" data-item="${item.id}">✎</button>
-          <button class="icon-btn red" data-action="del" data-sec="${sec.id}" data-item="${item.id}">✕</button>
-        </div>` : '';
-        const meta = [
-          `THC: <span class="thc">${esc(item.thc)}%</span>`,
-          item.cbd    ? `CBD: <span class="cbd-val">${esc(item.cbd)}%</span>` : '',
-          item.grower ? esc(item.grower) : '',
-          item.size   ? esc(item.size)   : ''
-        ].filter(Boolean).join(' · ');
-
-        return `<div class="menu-item">
-          <div class="item-top">
-            <div class="item-left">
-              <span class="item-name">${esc(item.name)}</span>
-              <span class="badge ${typeClass}">${esc(item.type)}</span>
-              ${cbdBadge}${editBtns}
-            </div>
-            <span class="item-price">${esc(item.price)}</span>
-          </div>
-          <div class="item-meta">${meta}</div>
-          <p class="item-desc">${esc(item.desc)}</p>
-        </div>`;
-      }).join('');
-
-      const addBtn = isEdit
-        ? `<button class="inline-add-btn" data-action="addinline" data-sec="${sec.id}">+ Add item to ${esc(sec.name)}</button>`
-        : '';
-
-      return `<div class="section-col">${head}${items}${addBtn}</div>`;
-    }).join('');
-    body = `<div class="sections-grid">${cols}</div>`;
+    </div></div></div>`;
   }
 
-  const footer = `<div class="menu-footer">
-    <div>📍 Portland, OR · Ask your budtender about today's fresh drops!</div>
-    <div><em>Prices include tax. Cannabis has intoxicating effects. Keep out of reach of children.</em></div>
-  </div>`;
+  return sections.map((sec, si) => {
+    const isTopPick = sec.name.toLowerCase().includes('top pick') || sec.name.toLowerCase().includes('top pick');
 
-  return editBar + body + footer;
+    const secHead = isEdit
+      ? `<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+           <input class="sec-name-input" value="${esc(sec.name)}" data-action="rename" data-sec="${sec.id}" style="flex:1;">
+           <button class="icon-btn red" data-action="delsec" data-sec="${sec.id}">✕</button>
+         </div>`
+      : isTopPick
+        ? `<div class="hero-intro">
+             <h2>Staff <span>Picks</span></h2>
+             <p>Our team's current favorites — ask your budtender for more details.</p>
+           </div>
+           <div class="swipe-hint"><span class="arrow">→</span> Swipe to browse the full menu</div>`
+        : `<div class="sec-heading">${esc(sec.name)}<span class="sec-count">${sec.items.length} strains</span></div>`;
+
+    const items = sec.items.map(item => {
+      const cbdBadge = item.cbd ? `<span class="badge cbd-badge">CBD</span>` : '';
+      const editBtns = isEdit ? `<div class="edit-actions">
+        <button class="icon-btn" data-action="edit" data-sec="${sec.id}" data-item="${item.id}">✎</button>
+        <button class="icon-btn red" data-action="del" data-sec="${sec.id}" data-item="${item.id}">✕</button>
+      </div>` : '';
+
+      if (isTopPick && !isEdit) {
+        return `<div class="top-pick-item">
+          <div class="tp-label">⭐ Staff Pick</div>
+          <div class="tp-top">
+            <div class="tp-left">
+              <span class="tp-name">${esc(item.name)}</span>
+              ${typeBadge(item.type)}
+              ${cbdBadge}
+            </div>
+            <span class="tp-price">${esc(item.price)}</span>
+          </div>
+          <div class="tp-meta">${itemMeta(item)}</div>
+          ${item.desc ? `<p class="tp-desc">${esc(item.desc)}</p>` : ''}
+        </div>`;
+      }
+
+      return `<div class="menu-item">
+        <div class="item-top">
+          <div class="item-left">
+            <span class="item-name">${esc(item.name)}</span>
+            ${typeBadge(item.type)}
+            ${cbdBadge}
+            ${editBtns}
+          </div>
+          <span class="item-price">${esc(item.price)}</span>
+        </div>
+        <div class="item-meta">${itemMeta(item)}</div>
+        ${item.desc ? `<p class="item-desc">${esc(item.desc)}</p>` : ''}
+      </div>`;
+    }).join('');
+
+    const addBtn = isEdit
+      ? `<button class="inline-add-btn" data-action="addinline" data-sec="${sec.id}">+ Add item to ${esc(sec.name)}</button>`
+      : '';
+
+    const footer = `<div class="page-footer">
+      <div>📍 Portland, OR · Ask your budtender about today's fresh drops!</div>
+      <div><em>Prices include tax. Cannabis has intoxicating effects. Keep out of reach of children.</em></div>
+    </div>`;
+
+    return `<div class="gt-page" data-page="${si}">
+      <div class="page-inner">${secHead}${items}${addBtn}${footer}</div>
+    </div>`;
+  }).join('');
 }
 
+// ══════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════
 function buildItemModal() {
   const d    = modal.data;
   const opts = sections.map(s =>
@@ -764,7 +871,7 @@ function buildItemModal() {
       <h3>${modal.type==='add' ? 'Add item' : 'Edit item'}</h3>
       <div class="field"><label>Section</label><select id="m-sec">${opts}</select></div>
       <div class="row2">
-        <div class="field"><label>Product name</label><input id="m-name" value="${esc(d.name)}" placeholder="e.g. Blue Dream"></div>
+        <div class="field"><label>Name</label><input id="m-name" value="${esc(d.name)}" placeholder="e.g. Blue Dream"></div>
         <div class="field"><label>Type</label><select id="m-type">
           <option value="indica"${d.type==='indica'?' selected':''}>Indica</option>
           <option value="sativa"${d.type==='sativa'?' selected':''}>Sativa</option>
@@ -785,7 +892,7 @@ function buildItemModal() {
       <div class="field"><label>Description</label><textarea id="m-desc">${esc(d.desc)}</textarea></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="m-cancel">Cancel</button>
-        <button class="btn btn-coral" id="m-save">${modal.type==='add' ? 'Add to menu' : 'Save changes'}</button>
+        <button class="btn btn-coral" id="m-save">${modal.type==='add' ? 'Add to menu' : 'Save'}</button>
       </div>
     </div>
   </div>`;
@@ -799,9 +906,9 @@ function buildSheetModal() {
         <label>Published CSV URL</label>
         <input type="url" id="url-input" placeholder="https://docs.google.com/spreadsheets/d/..." value="${esc(sheetUrl)}">
       </div>
-      <div class="steps" style="margin-top:0;">
-        <div class="step"><div class="step-num">1</div><div><strong>File → Share → Publish to web</strong> → <code>CSV</code> → Publish</div></div>
-        <div class="step"><div class="step-num">2</div><div>Copy and paste the URL here</div></div>
+      <div class="steps" style="margin-top:0">
+        <div class="step"><div class="step-num">1</div><div><strong>File → Share → Publish to web</strong> → CSV → Publish</div></div>
+        <div class="step"><div class="step-num">2</div><div>Paste the URL above</div></div>
       </div>
       <div class="modal-actions">
         <button class="btn btn-ghost" id="m-cancel">Cancel</button>
@@ -811,33 +918,134 @@ function buildSheetModal() {
   </div>`;
 }
 
-// ─────────────────────────────────────────────
-//  RENDER
-// ─────────────────────────────────────────────
-function render() {
-  const app = q('gt-app');
-  if (!app) return;
+// ══════════════════════════════════════
+//  TICKER
+// ══════════════════════════════════════
+function renderTicker() {
+  const track = q('ticker-track');
+  if (!track) return;
+  const active = banners.filter(b => b.on && b.text.trim());
+  const msgs = active.length ? active : [{ text: 'Good Times Cannabis · Portland, OR' }];
+  const items = [...msgs, ...msgs].map(b =>
+    `<span class="ticker-item">${b.text}</span><span class="ticker-sep"></span>`
+  ).join('');
+  track.innerHTML = items;
+  const dur = Math.max(40, msgs.reduce((s,b) => s + b.text.length, 0) * 0.6);
+  track.style.animationDuration = dur + 's';
+}
 
-  // Remove existing modals
+function openBannerEditor() {
+  q('banner-overlay')?.remove();
+  const rows = banners.map((b, i) => `
+    <div class="banner-row">
+      <input type="checkbox" ${b.on?'checked':''} data-i="${i}" class="bc">
+      <input type="text" value="${esc(b.text)}" data-i="${i}" class="bt" placeholder="Type a promo message…">
+      <button class="b-del" data-i="${i}">✕</button>
+    </div>`).join('');
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'banner-overlay';
+  overlay.innerHTML = `<div class="banner-modal">
+    <h3>🔥 Ticker Messages</h3>
+    <p class="sub">Check to show, uncheck to hide. Changes save instantly.</p>
+    <div>${rows}</div>
+    <button class="add-msg-btn" id="b-add">+ Add message</button>
+    <p class="banner-hint">💡 Use emoji at the start — e.g. 🔥 Daily deal: 2 prerolls for $10!</p>
+    <div class="modal-actions"><button class="btn btn-ghost" id="b-done">Done</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll('.bc').forEach(el => {
+    el.addEventListener('change', () => { banners[+el.dataset.i].on = el.checked; saveBanners(); renderTicker(); });
+  });
+  overlay.querySelectorAll('.bt').forEach(el => {
+    el.addEventListener('input', () => { banners[+el.dataset.i].text = el.value; saveBanners(); renderTicker(); });
+  });
+  overlay.querySelectorAll('.b-del').forEach(el => {
+    el.addEventListener('click', () => { banners.splice(+el.dataset.i,1); saveBanners(); renderTicker(); openBannerEditor(); });
+  });
+  q('b-add').addEventListener('click', () => { banners.push({text:'',on:true}); saveBanners(); openBannerEditor(); });
+  q('b-done').addEventListener('click', () => overlay.remove());
+}
+
+// ══════════════════════════════════════
+//  ITEM MODAL ACTIONS
+// ══════════════════════════════════════
+function openItemModal(type, secId, itemId) {
+  if (type === 'edit') {
+    const sec  = sections.find(s => s.id === secId);
+    const item = sec?.items.find(i => i.id === itemId);
+    if (!item) return;
+    activeSec = secId;
+    modal = { type:'edit', secId, itemId, data:{...item} };
+  } else {
+    modal = { type:'add', data:{name:'',type:'hybrid',thc:'',cbd:'',grower:'',price:'',size:'',desc:''} };
+  }
+  render();
+}
+
+function saveItem() {
+  const d = {
+    name: val('m-name'), type: val('m-type'),
+    thc:  val('m-thc'),  cbd:  val('m-cbd'),
+    grower: val('m-grower'), price: val('m-price'),
+    size: val('m-size'), desc: val('m-desc')
+  };
+  if (!d.name) return;
+  const sec = sections.find(s => s.id === +val('m-sec'));
+  if (!sec) return;
+  if (modal.type === 'add') {
+    sec.items.push({ id: nextId++, ...d });
+  } else {
+    const idx = sec.items.findIndex(i => i.id === modal.itemId);
+    if (idx > -1) sec.items[idx] = { id: modal.itemId, ...d };
+    else sec.items.push({ id: nextId++, ...d });
+  }
+  modal = null; save(); render();
+}
+
+function addSection() {
+  sections.push({ id: nextId++, name: 'New Section', items: [] });
+  save(); render();
+}
+
+// ══════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════
+function render() {
+  // Remove old modals
   q('item-modal')?.remove();
   q('sheet-modal')?.remove();
+  q('ticker-edit-btn')?.remove();
 
-  // Render main content
-  app.innerHTML = buildContent();
+  // Pages
+  const pagesEl = q('gt-pages');
+  if (pagesEl) pagesEl.innerHTML = buildPages();
 
-  // Render modal on top if needed
+  // Edit bar
+  const slot = q('edit-bar-slot');
+  if (slot) {
+    if (mode === 'edit') {
+      const connected = sheetUrl ? '● Sheet connected' : '○ No sheet';
+      slot.innerHTML = `<div class="edit-bar">
+        <button class="btn btn-coral" id="b-add-item">+ Add item</button>
+        <button class="btn btn-dark"  id="b-add-sec">+ Section</button>
+        <button class="btn btn-ghost" id="b-sheet">${sheetUrl ? '⬡ Re-sync' : '⬡ Connect sheet'}</button>
+        ${sheetUrl ? `<button class="btn btn-ghost" id="b-reload">↻ Reload</button>` : ''}
+        <span class="status">${connected}</span>
+      </div>`;
+    } else {
+      slot.innerHTML = '';
+    }
+  }
+
+  // Modal
   if (modal?.type === 'add' || modal?.type === 'edit') {
     document.body.insertAdjacentHTML('beforeend', buildItemModal());
   } else if (modal?.type === 'sheet') {
     document.body.insertAdjacentHTML('beforeend', buildSheetModal());
   }
 
-  // Update logo active states
-  q('logo-g')?.classList.toggle('active', mode === 'view');
-  q('logo-t')?.classList.toggle('active', mode === 'edit');
-
   // Ticker edit button
-  q('ticker-edit-btn')?.remove();
   if (mode === 'edit') {
     const teb = document.createElement('button');
     teb.className = 'ticker-edit-btn'; teb.id = 'ticker-edit-btn';
@@ -846,39 +1054,40 @@ function render() {
     document.body.appendChild(teb);
   }
 
-  bindEvents();
+  // Logo active states
+  q('logo-g')?.classList.toggle('active', mode === 'view');
+  q('logo-t')?.classList.toggle('active', mode === 'edit');
+
+  // Restore page position without animation
+  goToPage(Math.min(curPage, totalPages() - 1), false);
   renderTicker();
+  bindEvents();
 }
 
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 //  BIND EVENTS
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 function bindEvents() {
-  // Logo mode toggle
+  // Logo
   q('logo-g')?.addEventListener('click', () => setMode('view'));
   q('logo-t')?.addEventListener('click', () => setMode('edit'));
 
   // Edit bar
   q('b-add-item')?.addEventListener('click', () => { activeSec = sections[0]?.id; openItemModal('add'); });
   q('b-add-sec')?.addEventListener('click', addSection);
-  q('b-sheet')?.addEventListener('click', () => { modal = { type: 'sheet' }; render(); });
+  q('b-sheet')?.addEventListener('click', () => { modal = {type:'sheet'}; render(); });
   q('b-reload')?.addEventListener('click', () => sheetUrl && fetchSheet(sheetUrl));
-  q('b-sheet-err')?.addEventListener('click', () => { modal = { type: 'sheet' }; render(); });
+  q('b-sheet-err')?.addEventListener('click', () => { modal = {type:'sheet'}; render(); });
 
-  // Connect banner inline
-  q('b-load')?.addEventListener('click', () => {
-    const url = val('url-input');
-    if (url) { modal = null; fetchSheet(url); }
-  });
-  q('url-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { const url = val('url-input'); if (url) { modal = null; fetchSheet(url); } }
-  });
+  // URL load
+  q('b-load')?.addEventListener('click', () => { const u = val('url-input'); if(u){modal=null;fetchSheet(u);} });
+  q('url-input')?.addEventListener('keydown', e => { if(e.key==='Enter'){const u=val('url-input');if(u){modal=null;fetchSheet(u);}} });
 
   // Item modal
-  q('m-cancel')?.addEventListener('click', () => { modal = null; render(); });
+  q('m-cancel')?.addEventListener('click', () => { modal=null; render(); });
   q('m-save')?.addEventListener('click', saveItem);
 
-  // Data actions (edit/delete items and sections)
+  // Data actions
   document.querySelectorAll('[data-action]').forEach(el => {
     const a = el.dataset.action;
     if (a === 'rename') {
@@ -891,24 +1100,66 @@ function bindEvents() {
     el.addEventListener('click', e => {
       e.stopPropagation();
       const sid = +el.dataset.sec, iid = +el.dataset.item;
-      if (a === 'edit')     { activeSec = sid; openItemModal('edit', sid, iid); }
-      if (a === 'del')      { const s = sections.find(x=>x.id===sid); if(s){s.items=s.items.filter(i=>i.id!==iid);save();render();} }
-      if (a === 'delsec')   { sections = sections.filter(s=>s.id!==sid); save(); render(); }
-      if (a === 'addinline'){ activeSec = sid; openItemModal('add'); }
+      if (a === 'edit')      { activeSec = sid; openItemModal('edit', sid, iid); }
+      if (a === 'del')       { const s=sections.find(x=>x.id===sid); if(s){s.items=s.items.filter(i=>i.id!==iid);save();render();} }
+      if (a === 'delsec')    { sections=sections.filter(s=>s.id!==sid); save(); render(); }
+      if (a === 'addinline') { activeSec=sid; openItemModal('add'); }
     });
   });
 
-  // Scroll shrink header
-  const header = q('gt-header');
-  window.removeEventListener('scroll', window._gtScroll);
-  window._gtScroll = () => header?.classList.toggle('scrolled', window.scrollY > 50);
-  window.addEventListener('scroll', window._gtScroll, { passive: true });
-  window._gtScroll();
+  // Arrow nav
+  q('arrow-prev')?.addEventListener('click', () => goToPage(curPage - 1));
+  q('arrow-next')?.addEventListener('click', () => goToPage(curPage + 1));
+
+  // Scroll header effect (per-page scroll)
+  document.querySelectorAll('.gt-page').forEach(page => {
+    page.addEventListener('scroll', () => {
+      q('gt-header')?.classList.toggle('scrolled', page.scrollTop > 40);
+    }, { passive: true });
+  });
+
+  // Touch swipe
+  bindSwipe();
 }
 
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
+//  SWIPE GESTURE
+// ══════════════════════════════════════
+function bindSwipe() {
+  const wrap = q('gt-pages-wrap');
+  if (!wrap) return;
+  let startX = 0, startY = 0, isDragging = false, isHorizontal = null;
+
+  wrap.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = true; isHorizontal = null;
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (isHorizontal === null) {
+      isHorizontal = Math.abs(dx) > Math.abs(dy);
+    }
+    if (isHorizontal) e.preventDefault();
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', e => {
+    if (!isDragging || !isHorizontal) { isDragging = false; return; }
+    const dx = e.changedTouches[0].clientX - startX;
+    isDragging = false;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) goToPage(curPage + 1);
+      else         goToPage(curPage - 1);
+    }
+  }, { passive: true });
+}
+
+// ══════════════════════════════════════
 //  INIT
-// ─────────────────────────────────────────────
+// ══════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   render();
 });
