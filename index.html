@@ -425,6 +425,7 @@ let loadError = '';
 let activeSec = null;
 let nextId    = Date.now();
 let curPage   = 0;
+let tickerSpeed = parseInt(localStorage.getItem('gt_ticker_speed') || '45');
 let banners = JSON.parse(localStorage.getItem('gt_banners') || 'null') || [
   { text: '🔥 House Prerolls — 2 for $10 · Ask your budtender!', on: true },
   { text: '🌿 Earn loyalty points on every purchase', on: true },
@@ -438,6 +439,7 @@ function save() {
   if (sheetUrl) localStorage.setItem('gt_sheet_url', sheetUrl);
 }
 function saveBanners() { localStorage.setItem('gt_banners', JSON.stringify(banners)); }
+function saveSpeed(s) { tickerSpeed = s; localStorage.setItem('gt_ticker_speed', s); }
 
 // ══ SORT — Top Pick always first ══
 function sortSections() {
@@ -751,8 +753,15 @@ function renderTicker() {
   track.innerHTML = [...msgs, ...msgs].map(b =>
     `<span class="ticker-item">${b.text}</span><span class="ticker-sep"></span>`
   ).join('');
-  const dur = Math.max(40, msgs.reduce((s,b) => s+b.text.length, 0) * 0.6);
-  track.style.animationDuration = dur + 's';
+  track.style.animationDuration = tickerSpeed + 's';
+}
+
+function speedLabel(s) {
+  if (s <= 25) return 'Very fast';
+  if (s <= 35) return 'Fast';
+  if (s <= 50) return 'Medium';
+  if (s <= 65) return 'Slow';
+  return 'Very slow';
 }
 
 function openBannerEditor() {
@@ -769,6 +778,17 @@ function openBannerEditor() {
     <p class="sub">Check to show, uncheck to hide. Changes save instantly.</p>
     <div>${rows}</div>
     <button class="add-msg-btn" id="b-add">+ Add message</button>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);">Scroll Speed</label>
+        <span style="font-size:13px;font-weight:600;color:var(--charcoal);" id="speed-label">${speedLabel(tickerSpeed)}</span>
+      </div>
+      <input type="range" id="speed-slider" min="20" max="90" step="5" value="${tickerSpeed}"
+        style="width:100%;accent-color:var(--coral);height:6px;cursor:pointer;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px;">
+        <span>Fast</span><span>Slow</span>
+      </div>
+    </div>
     <p class="banner-hint">💡 Use emoji at the start — e.g. 🔥 Daily deal: 2 prerolls for $10!</p>
     <div class="modal-actions"><button class="btn btn-ghost" id="b-done">Done</button></div>
   </div>`;
@@ -778,6 +798,16 @@ function openBannerEditor() {
   overlay.querySelectorAll('.b-del').forEach(el => el.addEventListener('click', () => { banners.splice(+el.dataset.i,1); saveBanners(); renderTicker(); openBannerEditor(); }));
   q('b-add').addEventListener('click',  () => { banners.push({text:'',on:true}); saveBanners(); openBannerEditor(); });
   q('b-done').addEventListener('click', () => overlay.remove());
+  const slider = q('speed-slider');
+  const label  = q('speed-label');
+  if (slider) {
+    slider.addEventListener('input', () => {
+      const s = parseInt(slider.value);
+      if (label) label.textContent = speedLabel(s);
+      saveSpeed(s);
+      renderTicker();
+    });
+  }
 }
 
 // ══ ITEM ACTIONS ══
