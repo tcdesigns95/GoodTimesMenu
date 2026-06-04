@@ -230,14 +230,26 @@ html, body {
 /* ══ PAGE ARROWS ══ */
 .page-arrow {
   position: fixed; top: 50%; transform: translateY(-50%);
-  z-index: 30; background: white; border: 1px solid var(--dash);
+  z-index: 30;
+  background: rgba(250,247,242,0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.35);
   border-radius: 50%; width: 44px; height: 44px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; font-size: 18px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1); color: var(--charcoal);
-  transition: opacity .2s;
+  color: rgba(30,28,26,0.4);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  transition: background .2s, color .2s, opacity .2s;
 }
-.page-arrow:active { background: var(--linen); }
+.page-arrow:hover {
+  background: rgba(250,247,242,0.6);
+  color: rgba(30,28,26,0.85);
+}
+.page-arrow:active {
+  background: rgba(250,247,242,0.75);
+  color: var(--charcoal);
+}
 .page-arrow.prev { left: 12px; }
 .page-arrow.next { right: 12px; }
 .page-arrow.hidden { opacity: 0; pointer-events: none; }
