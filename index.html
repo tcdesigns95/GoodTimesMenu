@@ -425,8 +425,6 @@ let loadError = '';
 let activeSec = null;
 let nextId    = Date.now();
 let curPage   = 0;
-let headerH   = 0; // measured at runtime
-
 let banners = JSON.parse(localStorage.getItem('gt_banners') || 'null') || [
   { text: '🔥 House Prerolls — 2 for $10 · Ask your budtender!', on: true },
   { text: '🌿 Earn loyalty points on every purchase', on: true },
@@ -845,16 +843,15 @@ function render() {
     document.body.appendChild(teb);
   }
 
-  // Layout measurement (after DOM update)
+  // Bind events and layout AFTER DOM is painted
   requestAnimationFrame(() => {
     updateLayout();
     goToPage(Math.min(curPage, totalPages()-1), false);
     updateNav();
     renderTicker();
     bindScrollHeader();
+    bindEvents();
   });
-
-  bindEvents();
 }
 
 // ══ SCROLL HEADER SHRINK ══
@@ -869,15 +866,32 @@ function bindScrollHeader() {
 
 // ══ BIND EVENTS ══
 function bindEvents() {
+  // Remove old delegated listener first
+  document.removeEventListener('click', window._docClick);
+  document.removeEventListener('keydown', window._docKey);
+
+  // Delegated listener catches dynamically rendered buttons
+  window._docClick = e => {
+    const t = e.target.closest('button, input');
+    if (!t) return;
+    if (t.id === 'b-load') { const u = val('url-input'); if (u) { modal = null; fetchSheet(u); } }
+    if (t.id === 'b-sheet-err') { modal = {type:'sheet'}; render(); }
+  };
+  window._docKey = e => {
+    if (e.key === 'Enter' && e.target.id === 'url-input') {
+      const u = val('url-input'); if (u) { modal = null; fetchSheet(u); }
+    }
+  };
+  document.addEventListener('click', window._docClick);
+  document.addEventListener('keydown', window._docKey);
+
   q('logo-g')?.addEventListener('click', () => setMode('view'));
   q('logo-t')?.addEventListener('click', () => setMode('edit'));
   q('b-add-item')?.addEventListener('click', () => { activeSec=sections[0]?.id; openItemModal('add'); });
   q('b-add-sec')?.addEventListener('click', () => { sections.push({id:nextId++,name:'New Section',items:[]}); save(); render(); });
   q('b-sheet')?.addEventListener('click', () => { modal={type:'sheet'}; render(); });
   q('b-reload')?.addEventListener('click', () => sheetUrl && fetchSheet(sheetUrl));
-  q('b-sheet-err')?.addEventListener('click', () => { modal={type:'sheet'}; render(); });
-  q('b-load')?.addEventListener('click', () => { const u=val('url-input'); if(u){modal=null;fetchSheet(u);} });
-  q('url-input')?.addEventListener('keydown', e => { if(e.key==='Enter'){const u=val('url-input');if(u){modal=null;fetchSheet(u);}} });
+  // b-load, b-sheet-err, url-input handled by delegated listener above
   q('m-cancel')?.addEventListener('click', () => { modal=null; render(); });
   q('m-save')?.addEventListener('click', saveItem);
   q('arrow-prev')?.addEventListener('click', () => goToPage(curPage-1));
@@ -921,7 +935,7 @@ function bindSwipe() {
   }, {passive:true});
 
   // Mouse drag
-  wrap.addEventListener('mousedown', e => { sx=e.clientX; sy=e.clientY; dragging=true; horiz=null; moved=false; wrap.style.cursor='grabbing'; e.preventDefault(); });
+  wrap.addEventListener('mousedown', e => { sx=e.clientX; sy=e.clientY; dragging=true; horiz=null; moved=false; }, {passive:true});
   window.addEventListener('mousemove', e => {
     if (!dragging) return;
     const dx=e.clientX-sx, dy=e.clientY-sy;
@@ -930,8 +944,10 @@ function bindSwipe() {
   });
   window.addEventListener('mouseup', e => {
     if (!dragging) return;
-    wrap.style.cursor=''; const dx=e.clientX-sx; dragging=false;
-    if (horiz && moved && Math.abs(dx)>60) dx<0 ? goToPage(curPage+1) : goToPage(curPage-1);
+    wrap.style.cursor = '';
+    const dx = e.clientX - sx;
+    dragging = false;
+    if (horiz && moved && Math.abs(dx) > 60) dx < 0 ? goToPage(curPage+1) : goToPage(curPage-1);
   });
 
   // Trackpad horizontal scroll
