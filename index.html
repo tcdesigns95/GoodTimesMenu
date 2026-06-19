@@ -433,7 +433,8 @@ html, body {
 // ══ STATE ══
 let mode      = 'view';
 let modal     = null;
-let sheetUrl  = localStorage.getItem('gt_sheet_url') || '';
+const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTPRfJnmriwQKwnr_foLvtErk10OSNheZ9vMUnJUPzDq7sLMlzyVhJJt2GeIkmeRoFHCFrdBRUIn7DT/pub?output=csv';
+let sheetUrl  = localStorage.getItem('gt_sheet_url') || DEFAULT_SHEET_URL;
 let sections  = JSON.parse(localStorage.getItem('gt_sections') || 'null') || [];
 let loading   = false;
 let loadError = '';
@@ -609,7 +610,7 @@ function updateNav() {
 
 // ══ BUILD HTML ══
 function buildPages() {
-  if (loading) return `<div class="gt-page"><div class="page-inner">
+  if (loading && !sections.length) return `<div class="gt-page"><div class="page-inner">
     <div class="state-msg"><div class="spinner"></div>Loading from Google Sheet…</div>
   </div></div>`;
 
@@ -1019,7 +1020,9 @@ document.addEventListener('DOMContentLoaded', () => {
   sortSections();
   render();
   // Auto-fetch if URL saved but no cached sections
-  if (sheetUrl && !sections.length) fetchSheet(sheetUrl);
+  // Always pull fresh sheet data on load so the menu stays live for every visitor.
+  // Cached sections (if any) render first, then get replaced when the fetch returns.
+  if (sheetUrl) fetchSheet(sheetUrl);
 });
 
 // Recalculate layout on resize
