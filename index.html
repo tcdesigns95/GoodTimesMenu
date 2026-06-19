@@ -196,6 +196,7 @@ html, body {
 .item-desc  { font-size: 14px; color: #5A5754; line-height: 1.6; }
 .thc     { color: var(--coral); font-weight: 700; }
 .cbd-val { color: var(--cb-tx); font-weight: 700; }
+.cbg-val { color: var(--cg-tx); font-weight: 700; }
 
 .badge { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 5px; letter-spacing: .03em; }
 .indica        { background: var(--vi-bg); color: var(--vi-tx); }
@@ -204,6 +205,7 @@ html, body {
 .indica-hybrid { background: var(--vi-bg); color: var(--vi-tx); }
 .sativa-hybrid { background: var(--sa-bg); color: var(--sa-tx); }
 .cbd-badge     { background: var(--cb-bg); color: var(--cb-tx); }
+.cbg-badge     { background: var(--cg-bg); color: var(--cg-tx); }
 
 .edit-actions { display: flex; gap: 4px; }
 .icon-btn {
@@ -523,14 +525,14 @@ function parseCSV(text) {
   if (rows.length < 2) return;
   const map = {}, order = [];
   for (let i = 1; i < rows.length; i++) {
-    const [sec, name, type, thc, cbd, grower, price, size, desc] = rows[i];
+    const [sec, name, type, thc, cbd, cbg, grower, price, size, desc] = rows[i];
     if (!sec?.trim() || !name?.trim()) continue;
     const key = sec.trim();
     if (!map[key]) { map[key] = { id: nextId++, name: key, items: [] }; order.push(key); }
     const typeNorm = (type||'hybrid').trim().toLowerCase().replace(/[\s\-]+/g,'-').replace(/^-|-$/g,'');
     map[key].items.push({
       id: nextId++, name: name.trim(), type: typeNorm,
-      thc: (thc||'').trim(), cbd: (cbd||'').trim(), grower: (grower||'').trim(),
+      thc: (thc||'').trim(), cbd: (cbd||'').trim(), cbg: (cbg||'').trim(), grower: (grower||'').trim(),
       price: (price||'').trim(), size: (size||'').trim(), desc: (desc||'').trim()
     });
   }
@@ -567,6 +569,7 @@ function itemMeta(item) {
   return [
     `THC: <span class="thc">${esc(item.thc)}%</span>`,
     item.cbd    ? `CBD: <span class="cbd-val">${esc(item.cbd)}%</span>` : '',
+    item.cbg    ? `CBG: <span class="cbg-val">${esc(item.cbg)}%</span>` : '',
     item.grower ? esc(item.grower) : '',
     item.size   ? esc(item.size)   : ''
   ].filter(Boolean).join(' · ');
@@ -628,7 +631,7 @@ function buildPages() {
       <div class="steps">
         <div class="step"><div class="step-num">1</div><div><strong>File → Share → Publish to web</strong> → select <code>CSV</code> → Publish</div></div>
         <div class="step"><div class="step-num">2</div><div>Paste the URL above and tap Load</div></div>
-        <div class="step"><div class="step-num">3</div><div>Columns: <code>Section · Name · Type · THC · CBD · Grower · Price · Size · Description</code></div></div>
+        <div class="step"><div class="step-num">3</div><div>Columns: <code>Section · Name · Type · THC · CBD · CBG · Grower · Price · Size · Description</code></div></div>
       </div>
     </div>
   </div></div>`;
@@ -664,6 +667,7 @@ function buildPages() {
     // Items
     const items = sec.items.map(item => {
       const cbdBadge = item.cbd ? `<span class="badge cbd-badge">CBD</span>` : '';
+      const cbgBadge = item.cbg ? `<span class="badge cbg-badge">CBG</span>` : '';
       const editBtns = isEdit ? `<div class="edit-actions">
         <button class="icon-btn" data-action="edit" data-sec="${sec.id}" data-item="${item.id}">✎</button>
         <button class="icon-btn red" data-action="del" data-sec="${sec.id}" data-item="${item.id}">✕</button>
@@ -673,7 +677,7 @@ function buildPages() {
         return `<div class="top-pick-item">
           <div class="tp-label">⭐ Staff Pick</div>
           <div class="tp-top">
-            <div class="tp-left"><span class="tp-name">${esc(item.name)}</span>${typeBadge(item.type)}${cbdBadge}</div>
+            <div class="tp-left"><span class="tp-name">${esc(item.name)}</span>${typeBadge(item.type)}${cbdBadge}${cbgBadge}</div>
             <span class="tp-price">${esc(item.price)}</span>
           </div>
           <div class="tp-meta">${itemMeta(item)}</div>
@@ -683,7 +687,7 @@ function buildPages() {
 
       return `<div class="menu-item">
         <div class="item-top">
-          <div class="item-left"><span class="item-name">${esc(item.name)}</span>${typeBadge(item.type)}${cbdBadge}${editBtns}</div>
+          <div class="item-left"><span class="item-name">${esc(item.name)}</span>${typeBadge(item.type)}${cbdBadge}${cbgBadge}${editBtns}</div>
           <span class="item-price">${esc(item.price)}</span>
         </div>
         <div class="item-meta">${itemMeta(item)}</div>
@@ -724,6 +728,7 @@ function buildItemModal() {
     <div class="row2">
       <div class="field"><label>THC %</label><input id="m-thc" value="${esc(d.thc)}" placeholder="24.5"></div>
       <div class="field"><label>CBD %</label><input id="m-cbd" value="${esc(d.cbd)}" placeholder="leave blank if none"></div>
+      <div class="field"><label>CBG %</label><input id="m-cbg" value="${esc(d.cbg)}" placeholder="leave blank if none"></div>
     </div>
     <div class="row2">
       <div class="field"><label>Grower</label><input id="m-grower" value="${esc(d.grower)}" placeholder="Local Roots"></div>
@@ -830,13 +835,13 @@ function openItemModal(type, secId, itemId) {
     activeSec = secId;
     modal = { type:'edit', secId, itemId, data:{...item} };
   } else {
-    modal = { type:'add', data:{name:'',type:'hybrid',thc:'',cbd:'',grower:'',price:'',size:'',desc:''} };
+    modal = { type:'add', data:{name:'',type:'hybrid',thc:'',cbd:'',cbg:'',grower:'',price:'',size:'',desc:''} };
   }
   render();
 }
 
 function saveItem() {
-  const d = { name:val('m-name'), type:val('m-type'), thc:val('m-thc'), cbd:val('m-cbd'), grower:val('m-grower'), price:val('m-price'), size:val('m-size'), desc:val('m-desc') };
+  const d = { name:val('m-name'), type:val('m-type'), thc:val('m-thc'), cbd:val('m-cbd'), cbg:val('m-cbg'), grower:val('m-grower'), price:val('m-price'), size:val('m-size'), desc:val('m-desc') };
   if (!d.name) return;
   const sec = sections.find(s=>s.id===+val('m-sec'));
   if (!sec) return;
